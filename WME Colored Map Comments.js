@@ -1,70 +1,88 @@
 // ==UserScript==
 // @name         WME Colored Map Comments
 // @namespace    Dude495
-// @version      2023.03.17.01
+// @version      2025.05.30.01
 // @author       Dude495
 // @description  Change the color of Map Comment Points based on HEX Color Code.
 // @include      /^https:\/\/(www|beta)\.waze\.com\/(?!user\/)(.{2,6}\/)?editor\/?.*$/
-// @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // @license      GNU GPLv3
-// @grant        none
+// @connect      greasyfork.org
+// @grant        GM_xmlhttpRequest
+// @grant        GM_addElement
+// @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
+// @require      https://update.greasyfork.org/scripts/509664/WME%20Utils%20-%20Bootstrap.js
 /* global W */
 /* global $ */
 /* global WazeWrap */
+/* global bootstrap */
 // ==/UserScript==
 
 (function() {
     'use strict';
-    function ChangeColor() {
-        let defaultRules = W.map.getLayerByUniqueName('mapComments').styleMap.styles.default.rules;
-        let highlightRules = W.map.getLayerByUniqueName('mapComments').styleMap.styles.highlight.rules;
-        let selectRules = W.map.getLayerByUniqueName('mapComments').styleMap.styles.highlightselected.rules;
-        let mcStyle = defaultRules[0];
-        let hoverStyle = highlightRules[1];
-        let selectedStyle = selectRules[1];
-        if (mcStyle) {
-            if ($('#MCP').is(':checked')) {
-                mcStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
-                mcStyle.symbolizer.Point.fillOpacity = localStorage.getItem('CMC-MCPOpacity');
-                hoverStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
-                hoverStyle.symbolizer.Point.fillOpacity = localStorage.getItem('CMC-MCPOpacity')-0.1;
-                selectedStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
-                //selectedStyle.symbolizer.Point.fillOpacity = localStorage.getItem('CMC-MCPOpacity');
-                W.map.getLayersByName("mapComments")[0].redraw();
-            } else {
-                mcStyle.symbolizer.Point.fillColor = '#ffffff';
-                mcStyle.symbolizer.Point.fillOpacity = '0.3'
-                hoverStyle.symbolizer.Point.fillColor = '#ffffff';
-                hoverStyle.symbolizer.Point.fillOpacity = '0.3'
-                selectedStyle.symbolizer.Point.fillColor = '#ffffff';
-                selectedStyle.symbolizer.Point.fillOpacity = '0.3'
-                W.map.getLayersByName("mapComments")[0].redraw();
-            }
-            if ($('#MCA').is(':checked')) {
-                mcStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
-                mcStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
-                mcStyle.symbolizer.Polygon.fillOpacity = localStorage.getItem('CMC-MCAOpacity');
-                hoverStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
-                hoverStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
-                hoverStyle.symbolizer.Polygon.fillOpacity = localStorage.getItem('CMC-MCAOpacity')-0.1;
-                selectedStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
-                selectedStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
-                //selectedStyle.symbolizer.Polygon.fillOpacity = localStorage.getItem('CMC-MCAOpacity')
-                W.map.getLayersByName("mapComments")[0].redraw();
-            } else {
-                mcStyle.symbolizer.Polygon.fillColor = '#ffffff';
-                mcStyle.symbolizer.Polygon.strokeColor = '#ffffff';
-                mcStyle.symbolizer.Polygon.fillOpacity = '0.3'
-                hoverStyle.symbolizer.Polygon.fillColor = '#ffffff';
-                hoverStyle.symbolizer.Polygon.strokeColor = '#ffffff';
-                hoverStyle.symbolizer.Polygon.fillOpacity = '0.3'
-                selectedStyle.symbolizer.Polygon.fillColor = '#ffffff';
-                selectedStyle.symbolizer.Polygon.strokeColor = '#ffffff';
-                selectedStyle.symbolizer.Polygon.fillOpacity = '0.3'
-                W.map.getLayersByName("mapComments")[0].redraw();
-            }
-        }
+    let originalPointStyle = null;
+    let originalHoverPointStyle = null;
+    let originalSelectedPointStyle = null;
+    let originalPolygonStyle = null;
+    let originalHoverPolygonStyle = null;
+    let originalSelectedPolygonStyle = null;
+
+	const updateMessage = 'Improved: MC Points and MC Areas now properly revert to Waze’s default styles when their options are unchecked.\<br><br>Fixed:<br>- VCheckbox and slider states are reliably loaded from saved settings.<br>- Removed redundant code and improved maintainability.<br><br>';
+    const scriptName = GM_info.script.name;
+    const scriptVersion = GM_info.script.version;
+    const downloadUrl = 'https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.user.js';
+    const forumUrl = 'https://www.waze.com/forum/viewtopic.php?f=819&t=279838';
+
+function ChangeColor() {
+    let defaultRules = W.map.getLayerByUniqueName('mapComments').styleMap.styles.default.rules;
+    let highlightRules = W.map.getLayerByUniqueName('mapComments').styleMap.styles.highlight.rules;
+    let selectRules = W.map.getLayerByUniqueName('mapComments').styleMap.styles.highlightselected.rules;
+    let mcStyle = defaultRules[0];
+    let hoverStyle = highlightRules[1];
+    let selectedStyle = selectRules[1];
+
+    if (!originalPointStyle && mcStyle && mcStyle.symbolizer.Point) {
+        originalPointStyle = Object.assign({}, mcStyle.symbolizer.Point);
+        originalHoverPointStyle = Object.assign({}, hoverStyle.symbolizer.Point);
+        originalSelectedPointStyle = Object.assign({}, selectedStyle.symbolizer.Point);
     }
+    if (!originalPolygonStyle && mcStyle && mcStyle.symbolizer.Polygon) {
+        originalPolygonStyle = Object.assign({}, mcStyle.symbolizer.Polygon);
+        originalHoverPolygonStyle = Object.assign({}, hoverStyle.symbolizer.Polygon);
+        originalSelectedPolygonStyle = Object.assign({}, selectedStyle.symbolizer.Polygon);
+    }
+
+    if (mcStyle) {
+        // MC Points
+        if ($('#MCP').is(':checked')) {
+            mcStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
+            mcStyle.symbolizer.Point.fillOpacity = localStorage.getItem('CMC-MCPOpacity');
+            hoverStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
+            hoverStyle.symbolizer.Point.fillOpacity = localStorage.getItem('CMC-MCPOpacity')-0.1;
+            selectedStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
+        } else if (originalPointStyle) {
+            Object.assign(mcStyle.symbolizer.Point, originalPointStyle);
+            Object.assign(hoverStyle.symbolizer.Point, originalHoverPointStyle);
+            Object.assign(selectedStyle.symbolizer.Point, originalSelectedPointStyle);
+        }
+
+        // MC Areas
+        if ($('#MCA').is(':checked')) {
+            mcStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
+            mcStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
+            mcStyle.symbolizer.Polygon.fillOpacity = localStorage.getItem('CMC-MCAOpacity');
+            hoverStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
+            hoverStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
+            hoverStyle.symbolizer.Polygon.fillOpacity = localStorage.getItem('CMC-MCAOpacity')-0.1;
+            selectedStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
+            selectedStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
+        } else if (originalPolygonStyle) {
+            Object.assign(mcStyle.symbolizer.Polygon, originalPolygonStyle);
+            Object.assign(hoverStyle.symbolizer.Polygon, originalHoverPolygonStyle);
+            Object.assign(selectedStyle.symbolizer.Polygon, originalSelectedPolygonStyle);
+        }
+        W.map.getLayersByName("mapComments")[0].redraw();
+    }
+}
     function Save() {
         localStorage.setItem('CMC-Point', $('#CMC-Point').val());
         localStorage.setItem('CMC-Area', $('#CMC-Area').val());
@@ -98,18 +116,10 @@
             '<div class="rangeslider" title="Set opacity level" style="resize: none; width: 100px;"><input type="range" min="1" max="100" value="10" id="MCA-Slider" class="myslider"></input></div>',
             '<button class="btn btn-success" style="margin-bottom: 25px;" id="CMC-Save" data-toggle="tooltip" title="This button is only needed if you manually change the HEX Code">Save</button>'
         ].join(' '));
-        //$('#sidepanel-prefs').append($section);
-        WazeWrap.Interface.Tab('MC Colors', $section.html(), ChangeColor, 'MC Colors');
-        if (localStorage.getItem('MCP') === "true") {
-            $('#MCP')[0].checked = true
-        } else {
-            $('#MCP')[0].checked = false
-        }
-        if (localStorage.getItem('MCA') === "true") {
-            $('#MCA')[0].checked = true
-        } else {
-            $('#MCA')[0].checked = false
-        }
+        
+        WazeWrap.Interface.Tab('MC Colors', $section.html(), function() {
+            $('#MCP')[0].checked = localStorage.getItem('MCP') === "true";
+            $('#MCA')[0].checked = localStorage.getItem('MCA') === "true";
         $('#CMC-colorWheelPoint')[0].onchange = function() {
             $('#CMC-Point')[0].value = $('#CMC-colorWheelPoint')[0].value;
             Save();
@@ -139,16 +149,22 @@
         $("#CMC-Area").val(localStorage.getItem('CMC-Area'));
         ChangeColor();
         $('[data-toggle="tooltip"]').tooltip();
+        }, 'MC Colors');		
     }
-    function bootstrap() {
-        if (W && W.loginManager && W.loginManager.user && WazeWrap.Ready) {
-            console.log(GM_info.script.name, 'Initialized');
+
+    function sandboxBootstrap() {
+        if (WazeWrap?.Ready) {
+            bootstrap({
+                scriptUpdateMonitor: { downloadUrl },
+            });
             init();
-            WazeWrap.Interface.ShowScriptUpdate(GM_info.script.name, GM_info.script.version, '<ul><li>Code Change<ol style="list-style-type: lower-alpha; padding-bottom: 0;"><li>Created tab in the <b>Scripts</b> section of the new WME interface instead of having the controls under WME Settings.</li></li></ul><br><br><br>', "https://greasyfork.org/en/scripts/380974-wme-colored-map-comments","https://www.waze.com/forum/viewtopic.php?f=819&t=279838");
+            WazeWrap.Interface.ShowScriptUpdate(scriptName, scriptVersion, updateMessage, downloadUrl, forumUrl);
         } else {
-            console.log(GM_info.script.name, 'Bootstrap failed.  Trying again...');
-            window.setTimeout(() => bootstrap(), 500);
+            setTimeout(sandboxBootstrap, 250);
         }
     }
-    bootstrap();
+
+// Start the "sandboxed" code.
+sandboxBootstrap();
+console.log(`${scriptName} initialized.`);
 })();
