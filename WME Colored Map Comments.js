@@ -26,7 +26,7 @@
     let originalHoverPolygonStyle = null;
     let originalSelectedPolygonStyle = null;
 
-	const updateMessage = 'Improved: MC Points and MC Areas now properly revert to Waze’s default styles when their options are unchecked.\<br><br>Fixed:<br>- VCheckbox and slider states are reliably loaded from saved settings.<br>- Removed redundant code and improved maintainability.<br><br>';
+    const updateMessage = 'Improved: MC Points and MC Areas now properly revert to Waze’s default styles when their options are unchecked.\<br><br>Fixed:<br>- VCheckbox and slider states are reliably loaded from saved settings.<br>- Removed redundant code and improved maintainability.<br><br>';
     const scriptName = GM_info.script.name;
     const scriptVersion = GM_info.script.version;
     const downloadUrl = 'https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.user.js';
