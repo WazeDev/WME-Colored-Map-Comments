@@ -11,12 +11,14 @@
 // @grant        GM_addElement
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // @require      https://update.greasyfork.org/scripts/509664/WME%20Utils%20-%20Bootstrap.js
+// @downloadURL 
+// @updateURL 
+
+// ==/UserScript==
+
 /* global W */
 /* global WazeWrap */
 /* global bootstrap */
-// @downloadURL https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.user.js
-// @updateURL https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.meta.js
-// ==/UserScript==
 
 (function main() {
     'use strict';
