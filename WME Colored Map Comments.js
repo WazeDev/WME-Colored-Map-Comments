@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME Colored Map Comments
 // @namespace    Dude495
-// @version      2025.05.30.02
+// @version      2025.06.06.01
 // @author       Dude495
 // @description  Change the color of Map Comment Points based on HEX Color Code.
 // @include      /^https:\/\/(www|beta)\.waze\.com\/(?!user\/)(.{2,6}\/)?editor\/?.*$/
@@ -14,6 +14,8 @@
 /* global W */
 /* global WazeWrap */
 /* global bootstrap */
+// @downloadURL https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.user.js
+// @updateURL https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.meta.js
 // ==/UserScript==
 
 (function main() {
@@ -26,7 +28,7 @@
     let originalHoverPolygonStyle = null;
     let originalSelectedPolygonStyle = null;
 
-    const updateMessage = 'Improved: MC Points and MC Areas now properly revert to Waze’s default styles when their options are unchecked.<br><br>Fixed:<br>- VCheckbox and slider states are reliably loaded from saved settings.<br>- Removed redundant code and improved maintainability.<br><br>';
+    const updateMessage = 'Restored the functionality of stopping the color shifting/flashing on mousehover<br><br>';
     const scriptName = GM_info.script.name;
     const scriptVersion = GM_info.script.version;
     const downloadUrl = 'https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.user.js';
@@ -59,10 +61,13 @@
                 hoverStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
                 hoverStyle.symbolizer.Point.fillOpacity = localStorage.getItem('CMC-MCPOpacity') - 0.1;
                 selectedStyle.symbolizer.Point.fillColor = localStorage.getItem('CMC-Point');
-            } else if (originalPointStyle) {
-                Object.assign(mcStyle.symbolizer.Point, originalPointStyle);
-                Object.assign(hoverStyle.symbolizer.Point, originalHoverPointStyle);
-                Object.assign(selectedStyle.symbolizer.Point, originalSelectedPointStyle);
+            } else {
+                mcStyle.symbolizer.Point.fillColor = '#ffffff';
+                mcStyle.symbolizer.Point.fillOpacity = '0.3';
+                hoverStyle.symbolizer.Point.fillColor = '#ffffff';
+                hoverStyle.symbolizer.Point.fillOpacity = '0.3';
+                selectedStyle.symbolizer.Point.fillColor = '#ffffff';
+                selectedStyle.symbolizer.Point.fillOpacity = '0.3';
             }
 
             // MC Areas
@@ -75,10 +80,16 @@
                 hoverStyle.symbolizer.Polygon.fillOpacity = localStorage.getItem('CMC-MCAOpacity') - 0.1;
                 selectedStyle.symbolizer.Polygon.fillColor = localStorage.getItem('CMC-Area');
                 selectedStyle.symbolizer.Polygon.strokeColor = localStorage.getItem('CMC-Area');
-            } else if (originalPolygonStyle) {
-                Object.assign(mcStyle.symbolizer.Polygon, originalPolygonStyle);
-                Object.assign(hoverStyle.symbolizer.Polygon, originalHoverPolygonStyle);
-                Object.assign(selectedStyle.symbolizer.Polygon, originalSelectedPolygonStyle);
+            } else {
+                mcStyle.symbolizer.Polygon.fillColor = '#ffffff';
+                mcStyle.symbolizer.Polygon.strokeColor = '#ffffff';
+                mcStyle.symbolizer.Polygon.fillOpacity = '0.3';
+                hoverStyle.symbolizer.Polygon.fillColor = '#ffffff';
+                hoverStyle.symbolizer.Polygon.strokeColor = '#ffffff';
+                hoverStyle.symbolizer.Polygon.fillOpacity = '0.3';
+                selectedStyle.symbolizer.Polygon.fillColor = '#ffffff';
+                selectedStyle.symbolizer.Polygon.strokeColor = '#ffffff';
+                selectedStyle.symbolizer.Polygon.fillOpacity = '0.3';
             }
             W.map.getLayersByName('mapComments')[0].redraw();
         }
