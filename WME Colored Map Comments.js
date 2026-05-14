@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME Colored Map Comments
 // @namespace    Dude495
-// @version      2025.06.06.01
+// @version      2026.05.14.01
 // @author       Dude495
 // @description  Change the color of Map Comment Points based on HEX Color Code.
 // @include      /^https:\/\/(www|beta)\.waze\.com\/(?!user\/)(.{2,6}\/)?editor\/?.*$/
@@ -30,7 +30,7 @@
     let originalHoverPolygonStyle = null;
     let originalSelectedPolygonStyle = null;
 
-    const updateMessage = 'Restored the functionality of stopping the color shifting/flashing on mousehover<br><br>';
+    const updateMessage = 'SDK migration for script tab registration.<br><br>';
     const scriptName = GM_info.script.name;
     const scriptVersion = GM_info.script.version;
     const downloadUrl = 'https://update.greasyfork.org/scripts/380974/WME%20Colored%20Map%20Comments.user.js';
@@ -113,64 +113,63 @@
                      'CMC-MCAOpacity: '+localStorage.getItem('CMC-MCAOpacity'),
                     ].join('\n')); */
     }
-    function init() {
-        const $section = $('<div id="CMC-Panel">');
-        $section.html([
-            `<h5 align="left" style="color:black">Colored Map Comments v${GM_info.script.version},</h5>`,
-            '<input data-toggle="tooltip" type="checkbox" id="MCP" title="Enable Color Highlighting for MC Points">Colored MC Points</input>',
-            '<br>',
-            '<textarea style="resize: none; width: 85px; height: 25px;" rows="1" cols="10" maxlength="7" id="CMC-Point" data-toggle="tooltip" title="Enter the HEX Color Code for the color you want Map Comments to appear. (Include the #)" maxlength="7"></textarea>',
-            `<input style="width: 25px; margin-left: 5px; top: -7px; position: relative;" id="CMC-colorWheelPoint" type="color" value="${localStorage.getItem('CMC-Point')}"></input>`,
-            '<div class="rangeslider" title="Set opacity level" style="resize: none; width: 100px;"><input type="range" min="1" max="100" value="10" class="myslider" id="MCP-Slider"></div>',
-            '<br>',
-            '<input id="MCA" type="checkbox" title="Enable Color Highlighting for MC Area Polygons" data-toggle="tooltip">Colored MC Areas</input><br>',
-            '<textarea style="resize: none; width: 85px; height: 25px;" rows="1" cols="10" maxlength="7" id="CMC-Area" data-toggle="tooltip" title="Enter the HEX Color Code for the color you want Map Comment Areas to appear. (Include the #)"></textarea>',
-            `<input style="width: 25px; margin-left: 5px; top: -7px; position: relative;" id="CMC-colorWheelArea" type="color" value="${localStorage.getItem('CMC-Area')}">`,
-            '<div class="rangeslider" title="Set opacity level" style="resize: none; width: 100px;"><input type="range" min="1" max="100" value="10" id="MCA-Slider" class="myslider"></input></div>',
-            '<button class="btn btn-success" style="margin-bottom: 25px;" id="CMC-Save" data-toggle="tooltip" title="This button is only needed if you manually change the HEX Code">Save</button>'
-        ].join(' '));
 
-        WazeWrap.Interface.Tab('MC Colors', $section.html(), () => {
-            $('#MCP')[0].checked = localStorage.getItem('MCP') === 'true';
-            $('#MCA')[0].checked = localStorage.getItem('MCA') === 'true';
-            $('#CMC-colorWheelPoint')[0].onchange = function onCmcColorWheelPointChange() {
-                $('#CMC-Point')[0].value = $('#CMC-colorWheelPoint')[0].value;
-                Save();
-            };
-            $('#CMC-Point').val(localStorage.getItem('CMC-Point'));
-            $('#MCP-Slider').val(localStorage.getItem('CMC-MCPOpacity') * 100);
-            $('#MCA-Slider').val(localStorage.getItem('CMC-MCAOpacity') * 100);
-            $('#CMC-colorWheelArea')[0].onchange = function onCmcColorWheelAreaChange() {
-                $('#CMC-Area')[0].value = $('#CMC-colorWheelArea')[0].value;
-                Save();
-            };
-            $('#MCP-Slider')[0].onchange = function onMcpSliderChange() {
-                Save();
-            };
-            $('#MCA-Slider')[0].onchange = function onMcaSliderChange() {
-                Save();
-            };
-            $('#MCP')[0].onchange = function onMcpChange() {
-                Save();
-            };
-            $('#MCA')[0].onchange = function onMcaChange() {
-                Save();
-            };
-            $('#CMC-Save')[0].onclick = function onCmcSaveClick() {
-                Save();
-            };
-            $('#CMC-Area').val(localStorage.getItem('CMC-Area'));
-            ChangeColor();
-            $('[data-toggle="tooltip"]').tooltip();
-        }, 'MC Colors');
-    }
+	async function init(sdk) {
+		// Register the sidebar tab via the WME SDK
+		const { tabLabel, tabPane } = await sdk.Sidebar.registerScriptTab();
+		tabLabel.textContent = 'MC Colors';
+		tabLabel.title = 'Colored Map Comments';
 
-    function sandboxBootstrap() {
+		// Build the panel HTML inside tabPane
+		const panel = document.createElement('div');
+		panel.id = 'CMC-Panel';
+		panel.innerHTML = [
+			`<h5 style="color:black">Colored Map Comments v${GM_info.script.version}</h5>`,
+			'<label><input data-toggle="tooltip" type="checkbox" id="MCP" title="Enable Color Highlighting for MC Points"> Colored MC Points</label>',
+			'<br>',
+			'<textarea style="resize:none;width:85px;height:25px;" rows="1" cols="10" maxlength="7" id="CMC-Point" title="Enter HEX Color Code (include #)"></textarea>',
+			`<input style="width:25px;margin-left:5px;top:-7px;position:relative;" id="CMC-colorWheelPoint" type="color" value="${localStorage.getItem('CMC-Point') || '#ffffff'}">`,
+			'<div class="rangeslider" title="Set opacity level" style="width:100px;"><input type="range" min="1" max="100" value="10" class="myslider" id="MCP-Slider"></div>',
+			'<br>',
+			'<label><input id="MCA" type="checkbox" title="Enable Color Highlighting for MC Area Polygons"> Colored MC Areas</label><br>',
+			'<textarea style="resize:none;width:85px;height:25px;" rows="1" cols="10" maxlength="7" id="CMC-Area" title="Enter HEX Color Code (include #)"></textarea>',
+			`<input style="width:25px;margin-left:5px;top:-7px;position:relative;" id="CMC-colorWheelArea" type="color" value="${localStorage.getItem('CMC-Area') || '#ffffff'}">`,
+			'<div class="rangeslider" title="Set opacity level" style="width:100px;"><input type="range" min="1" max="100" value="10" id="MCA-Slider" class="myslider"></div>',
+			'<button class="btn btn-success" style="margin-bottom:25px;" id="CMC-Save" title="Only needed if you manually change the HEX Code">Save</button>'
+		].join('');
+		tabPane.appendChild(panel);
+
+		// Wire up event handlers (now directly on the DOM elements — no jQuery tab callback needed)
+		document.getElementById('MCP').checked = localStorage.getItem('MCP') === 'true';
+		document.getElementById('MCA').checked = localStorage.getItem('MCA') === 'true';
+		document.getElementById('CMC-Point').value = localStorage.getItem('CMC-Point') || '';
+		document.getElementById('CMC-Area').value = localStorage.getItem('CMC-Area') || '';
+		document.getElementById('MCP-Slider').value = (localStorage.getItem('CMC-MCPOpacity') || 0.3) * 100;
+		document.getElementById('MCA-Slider').value = (localStorage.getItem('CMC-MCAOpacity') || 0.3) * 100;
+
+		document.getElementById('CMC-colorWheelPoint').onchange = function() {
+			document.getElementById('CMC-Point').value = this.value;
+			Save();
+		};
+		document.getElementById('CMC-colorWheelArea').onchange = function() {
+			document.getElementById('CMC-Area').value = this.value;
+			Save();
+		};
+		document.getElementById('MCP-Slider').onchange = Save;
+		document.getElementById('MCA-Slider').onchange = Save;
+		document.getElementById('MCP').onchange = Save;
+		document.getElementById('MCA').onchange = Save;
+		document.getElementById('CMC-Save').onclick = Save;
+
+		ChangeColor();
+	}
+
+    async function sandboxBootstrap() {
         if (WazeWrap?.Ready) {
-            bootstrap({
+            const sdk = await bootstrap({
                 scriptUpdateMonitor: { downloadUrl }
             });
-            init();
+            init(sdk);
             WazeWrap.Interface.ShowScriptUpdate(scriptName, scriptVersion, updateMessage, downloadUrl, forumUrl);
         } else {
             setTimeout(sandboxBootstrap, 250);
